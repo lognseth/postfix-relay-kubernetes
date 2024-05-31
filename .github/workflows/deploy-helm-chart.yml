@@ -1,0 +1,38 @@
+name: Build and deploy Docker image & Helm Chart
+on:
+  push:
+    branches:
+      - 'main'
+      
+jobs:
+  build_and_deploy:
+    name: build
+    runs-on: ubuntu-latest  
+    steps:
+      - name: Login to DockerHub
+        uses: docker/login-action@v1 
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PAT }}
+      - name: Build and push network debugger
+        id: docker_build
+        uses: docker/build-push-action@v2
+        with:
+          file: ./Docker/Dockerfile
+          push: true
+          tags: lognseth/postfix:${{ github.run_number }}.${{ github.run_attempt }}.0
+      - name: Image digest
+        run: echo ${{ steps.docker_build.outputs.digest }}
+
+      - name: Login to GHCR
+        run: echo $GITHUB_TOKEN_REGISTRY | helm registry login ghcr.io/lognseth --username lognseth --password-stdin
+        env:
+          GITHUB_TOKEN_REGISTRY: ${{ secrets.PAT_GHCR }}
+
+      - name: Lint and build Helm Chart
+        uses: huggingface/helm-publish-action@latest
+        with:
+          workingDirectory: helm
+          repository: https://ghcr.io/lognseth/
+          username: lognseth
+          password: ${{ secrets.PAT_GHCR }}
