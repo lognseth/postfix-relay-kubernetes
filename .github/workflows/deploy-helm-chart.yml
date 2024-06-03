@@ -37,11 +37,11 @@ jobs:
 
       - name: save helm chart to local registry
         run: |
-          helm chart save ${{ github.workspace }}/helm/postfix/ ${{ env.GCR_IMAGE }}:${{ github.sha }}
+          helm package ${{ github.workspace }}/helm/postfix/ ${{ github.sha }}
 
       - name: publish chart to acr
         run: |
-          helm chart push ${{ env.GCR_IMAGE }}:${{ github.sha }}
+          helm push "${{ github.sha }}.tgz" ${{ env.GCR_IMAGE }}:${{ github.sha }}
 
       # - name: Lint and build Helm Chart
       #   uses: huggingface/helm-publish-action@latest
