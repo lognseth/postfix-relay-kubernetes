@@ -34,6 +34,6 @@ jobs:
         uses: huggingface/helm-publish-action@latest
         with:
           workingDirectory: helm
-          repository: https://ghcr.io/lognseth/
+          repository: https://ghcr.io/lognseth/postfix-relay-kubernetes/
           username: lognseth
           password: ${{ secrets.PAT_GHCR }}
