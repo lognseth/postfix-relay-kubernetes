@@ -4,7 +4,12 @@ on:
     branches:
       - 'main'
       - 'master'
-      
+
+env:
+  HELM_EXPERIMENTAL_OCI: 1 #enable OCI support
+  HELM_VERSION_TO_INSTALL: 3.5.0 # version of HELM to install
+  GCR_IMAGE: ghcr.io/${{ github.repository_owner }}/postfix-relay-kubernetes
+
 jobs:
   build_and_deploy:
     name: build
@@ -26,14 +31,22 @@ jobs:
         run: echo ${{ steps.docker_build.outputs.digest }}
 
       - name: Login to GHCR
-        run: echo $GITHUB_TOKEN_REGISTRY | helm registry login ghcr.io/lognseth --username lognseth --password-stdin
+        run: echo $GITHUB_TOKEN_REGISTRY | helm registry login ghcr.io/${{ github.repository_owner }} --username lognseth --password-stdin
         env:
           GITHUB_TOKEN_REGISTRY: ${{ secrets.PAT_GHCR }}
 
-      - name: Lint and build Helm Chart
-        uses: huggingface/helm-publish-action@latest
-        with:
-          workingDirectory: helm
-          repository: https://ghcr.io/lognseth/postfix-relay-kubernetes/
-          username: lognseth
-          password: ${{ secrets.PAT_GHCR }}
+      - name: save helm chart to local registry
+        run: |
+          helm chart save ${{ github.workspace }}/helm/postfix/ ${{ env.GCR_IMAGE }}:${{ github.sha }}
+
+      - name: publish chart to acr
+        run: |
+          helm chart push ${{ env.GCR_IMAGE }}:${{ github.sha }}
+
+      # - name: Lint and build Helm Chart
+      #   uses: huggingface/helm-publish-action@latest
+      #   with:
+      #     workingDirectory: helm
+      #     repository: https://ghcr.io/lognseth/postfix-relay-kubernetes/
+      #     username: lognseth
+      #     password: ${{ secrets.PAT_GHCR }}
